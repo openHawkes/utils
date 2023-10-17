@@ -268,13 +268,51 @@ limitations under the License.
         return x || x === '';
     }
 
+    function setDebugCookie() {
+        setCookie('isDebug', true);
+    }
+
+    function deleteDebugCookie() {
+        deleteCookie('isDebug');
+    }
+
+    function hasDebugCookie() {
+        return getCookie('isDebug');
+    }
+
+    // This would be replaced by a call to settings
+    // or some other means of checking feature flags.
+    let _useNewNav = localStorage.getItem('hideOldNavbar') === 'true';
+    console.log('_useNewNav: ' + _useNewNav);
+
+    function setUseNewNav(yeahOrNah) {
+        yeahOrNah = yeahOrNah === 'true' || yeahOrNah === true;
+        localStorage.setItem('hideOldNavbar', yeahOrNah);
+        _useNewNav = yeahOrNah;
+
+        console.log('_useNewNav set to ' + _useNewNav);
+    }
+
+    if (window.utils) {
+        console.error(
+            'window.utils already defined!\n~\\InstructorPortal.Web\\Scripts\\External\\openHawkes\\utils.js'
+        );
+    }
+
     window.utils = window.utils || {
+        setUseNewNav,
+        get useNewNav() {
+            return _useNewNav;
+        },
+
         devUrls,
         logit,
         cleanit,
         whatsRegistered,
 
+        compareObjects,
         camelCaseMyKeys,
+        warn,
         clone,
 
         isFunction,
@@ -286,20 +324,8 @@ limitations under the License.
         getCookie,
         deleteCookie,
         setCookie,
-
-        warn,
-        compareObjects,
-
-        setDebugCookie: function () {
-            setCookie('isDebug', true);
-        },
-
-        deleteDebugCookie: function () {
-            deleteCookie('isDebug');
-        },
-
-        hasDebugCookie: function () {
-            return getCookie('isDebug');
-        },
+        hasDebugCookie,
+        deleteDebugCookie,
+        setDebugCookie,
     };
 })();
