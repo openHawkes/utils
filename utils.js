@@ -338,28 +338,28 @@ limitations under the License.
             return _useNewNav;
         },
 
-        logit,
         cleanit,
-        whatsRegistered,
+        clone,
         createApiUri,
+        logit,
+        whatsRegistered,
 
         camelCaseMyKeys,
         pascalCaseMyKeys,
 
-        clone,
+        compareObjects,
         isFunction,
         isString,
         stringTruthiness,
-        compareObjects,
 
         devDebugger,
         warn,
 
-        getCookie,
         deleteCookie,
-        setCookie,
-        hasDebugCookie,
         deleteDebugCookie,
+        getCookie,
+        hasDebugCookie,
+        setCookie,
         setDebugCookie,
     };
 })();
