@@ -1,5 +1,5 @@
 /*************************************************************************
- * Copyright 2021-22 Hawkes Learning Systems
+ * Copyright 2021-23 Hawkes Learning Systems
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,18 +16,10 @@ limitations under the License.
 /* eslint quotes: ["error", "single", { "avoidEscape": true }]*/
 /* eslint-disable no-invalid-regexp */
 /* eslint-env browser */
-/* global angular */
 (function () {
     'use strict';
     var devUrls = ['http://localhost'];
-
-    function _toCamelCase(s) {
-        // You may also need to translate from kabob case, depending on your server.
-        // prettier-ignore
-        return (typeof s === 'string' || s instanceof String) && s.length > 1
-            ? s[0].toLowerCase() + s.substr(1, s.length)
-            : s.length ? s.toLowerCase() : s;
-    }
+    var useOldNavbarStorageKey = 'hideOldNavbar';
 
     // see https://eslint.org/docs/rules/no-prototype-builtins
     function _hasProp(obj, propName) {
@@ -175,24 +167,53 @@ limitations under the License.
         return b ? b.pop() : '';
     }
 
+    function _toCamelCase(s) {
+        // You may also need to translate from kabob case, depending on your server.
+        // prettier-ignore
+        return (typeof s === 'string' || s instanceof String) && s.length > 1
+            ? s[0].toLowerCase() + s.substr(1, s.length)
+            : s.length ? s.toLowerCase() : s;
+    }
+
+    function _toPascalCase(s) {
+        return (typeof s === 'string' || s instanceof String) && s.length > 1
+            ? s[0].toUpperCase() + s.substr(1, s.length)
+            : s.length
+            ? s.toUpperCase()
+            : s;
+    }
+
     function camelCaseMyKeys(obj) {
+        return caseMyKeys(obj, _toCamelCase);
+    }
+
+    // TODO: Do not use! This is a temporary workaround for a client-side codebase
+    // that depends on PascalCased payloads from servers. Fixing here allows
+    // the server to do the right thing (camelCased) without breaking the client.
+    // Remove once we're in TypeScript-land and can refactor more easily.
+    // (though beware of tempate usages)
+    function pascalCaseMyKeys(obj) {
+        return caseMyKeys(obj, _toPascalCase);
+    }
+
+    function caseMyKeys(obj, fnCaser) {
         if (Array.isArray(obj)) {
-            var camelCamels = [];
+            var casedObj = [];
             obj.forEach(function (item) {
-                camelCamels.push(camelCaseMyKeys(item));
+                casedObj.push(caseMyKeys(item, fnCaser));
             });
-            return camelCamels;
+            return casedObj;
         }
 
         if (obj === Object(obj)) {
             var keys = Object.keys(obj);
-            var camelCamel = {};
+            var newObj = {};
 
             keys.forEach(function (key) {
-                camelCamel[_toCamelCase(key)] = camelCaseMyKeys(obj[key]);
+                newObj[fnCaser(key)] = caseMyKeys(obj[key], fnCaser);
             });
 
-            return camelCamel;
+            return newObj;
         }
 
         return obj;
@@ -218,8 +239,8 @@ limitations under the License.
 
     // https://stackoverflow.com/a/27533937/1028230
     function whatsRegistered(type, moduleName) {
-        if (angular) {
-            angular.module(moduleName || 'app')._invokeQueue.forEach(function (value) {
+        if (window.angular) {
+            window.angular.module(moduleName || 'app')._invokeQueue.forEach(function (value) {
                 if (!type || type === value[1]) {
                     console.log(value[1] + ': ' + value[2][0]);
                 }
@@ -268,6 +289,9 @@ limitations under the License.
         return x || x === '';
     }
 
+    //========================================================================
+    // Right now, these are only used in QB's blocked-action-check.service.js
+    //========================================================================
     function setDebugCookie() {
         setCookie('isDebug', true);
     }
@@ -279,53 +303,63 @@ limitations under the License.
     function hasDebugCookie() {
         return getCookie('isDebug');
     }
+    //========================================================================
+    //========================================================================
 
     // This would be replaced by a call to settings
     // or some other means of checking feature flags.
-    let _useNewNav = localStorage.getItem('hideOldNavbar') === 'true';
-    console.log('_useNewNav: ' + _useNewNav);
+    let _useNewNav = localStorage.getItem(useOldNavbarStorageKey) === 'true';
 
-    function setUseNewNav(yeahOrNah) {
-        yeahOrNah = yeahOrNah === 'true' || yeahOrNah === true;
-        localStorage.setItem('hideOldNavbar', yeahOrNah);
-        _useNewNav = yeahOrNah;
+    function createApiUri(optionalRelativePath) {
+        optionalRelativePath = optionalRelativePath || '';
+        optionalRelativePath =
+            optionalRelativePath && !optionalRelativePath.startsWith('/')
+                ? '/' + optionalRelativePath
+                : optionalRelativePath;
 
-        console.log('_useNewNav set to ' + _useNewNav);
+        return (window.useApi ? 'QuestionBuilder.Api/api' : 'api') + optionalRelativePath;
+    }
+
+    function setUseNewNav(value) {
+        value = value === 'true' || value === true;
+        localStorage.setItem(useOldNavbarStorageKey, value);
+        _useNewNav = value;
     }
 
     if (window.utils) {
-        console.error(
-            'window.utils already defined!\n~\\InstructorPortal.Web\\Scripts\\External\\openHawkes\\utils.js'
-        );
+        console.error('window.utils already defined! (CDN)');
     }
 
     window.utils = window.utils || {
         setUseNewNav,
+
+        // this gives utils a read-only *property*
         get useNewNav() {
             return _useNewNav;
         },
 
-        devUrls,
-        logit,
         cleanit,
+        clone,
+        createApiUri,
+        logit,
         whatsRegistered,
 
-        compareObjects,
         camelCaseMyKeys,
-        warn,
-        clone,
+        pascalCaseMyKeys,
 
+        compareObjects,
         isFunction,
         isString,
         stringTruthiness,
 
         devDebugger,
+        warn,
 
-        getCookie,
         deleteCookie,
-        setCookie,
-        hasDebugCookie,
         deleteDebugCookie,
+        getCookie,
+        hasDebugCookie,
+        setCookie,
         setDebugCookie,
     };
 })();
