@@ -19,6 +19,9 @@ limitations under the License.
 (function () {
     'use strict';
     var devUrls = ['http://localhost'];
+    var isDevUrl = devUrls.find(function (url) {
+        return location.href.indexOf(url) === 0;
+    });
     var useOldNavbarStorageKey = 'hideOldNavbar';
 
     // see https://eslint.org/docs/rules/no-prototype-builtins
@@ -220,7 +223,7 @@ limitations under the License.
     }
 
     function logit() {
-        if (console && console.log) {
+        if (isDevUrl && console && console.log) {
             Array.prototype.forEach.call(arguments, function (arg) {
                 console.log(JSON.stringify(arg, null, '  '));
             });
@@ -275,11 +278,7 @@ limitations under the License.
     }
 
     function devDebugger() {
-        if (
-            devUrls.find(function (url) {
-                return location.href.indexOf(url) === 0;
-            })
-        ) {
+        if (isDevUrl) {
             //eslint-disable-next-line
             debugger;
         }
@@ -309,6 +308,7 @@ limitations under the License.
     // This would be replaced by a call to settings
     // or some other means of checking feature flags.
     let _useNewNav = localStorage.getItem(useOldNavbarStorageKey) === 'true';
+    logit(`useNewNav: ${_useNewNav}`);
 
     function createApiUri(optionalRelativePath) {
         optionalRelativePath = optionalRelativePath || '';
